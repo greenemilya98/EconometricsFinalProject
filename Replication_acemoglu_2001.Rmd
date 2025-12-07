@@ -66,7 +66,7 @@ The logic is that where the disease environment was favorable to European settle
 
 The datasets used in this replication can be found on Daron Acemoglu’s MIT faculty page. The paper can be accessed from here.
 
-```{r Make Table 1}
+```{r}
 # ---  Load Data ---
 ajr_data <- read_dta("https://raw.githubusercontent.com/greenemilya98/EconometricsFinalProject/4ca22ca19a59af5a24ff1be7070d3972877a67c6/maketable1.dta")
 
@@ -83,12 +83,57 @@ get_means <- function(df, vars) {
 get_sds <- function(df, vars) {
   df %>% summarise(across(all_of(vars), ~sd(.x, na.rm = TRUE)))
 }
+```
 
+
+```{r}
 # ---  Calculate All Statistics ---
 
 all_vars <- c("logpgp95", "loghjypl", "avexpr", "cons00a",
               "cons1", "democ00a", "euro1900", "logem4")
+```
 
+```{r}
+## Scatterplots of Settler Mortality against Institutional Quality Measures - Instrument Relevance
+ggplot(base_sample, aes(x = logem4, y = avexpr)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(
+    title = "Instrument Relevance: Settler Mortality vs. Institutional Quality - Average Protection Against Expropriation Risk",
+    x = "Log Settler Mortality (Instrument)",
+    y = "Average protection against expropriation risk "
+  )
+
+ggplot(base_sample, aes(x = logem4, y = cons1)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(
+    title = "Instrument Relevance: Settler Mortality vs. Institutional Quality - Constraint on Executive in 1st Year of Independence",
+    x = "Log Settler Mortality (Instrument)",
+    y = "Average protection against expropriation risk"
+  )
+
+ggplot(base_sample, aes(x = logem4, y = cons00a)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(
+    title = "Instrument Relevance: Settler Mortality vs. Institutional Quality - Constraint on Executive in 1900",
+    x = "Log Settler Mortality (Instrument)",
+    y = "Average protection against expropriation risk"
+  )
+
+ggplot(base_sample, aes(x = logem4, y = democ00a)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(
+    title = "Instrument Relevance: Settler Mortality vs. Institutional Quality - Democracy in 1900",
+    x = "Log Settler Mortality (Instrument)",
+    y = "Democracy in 1st Year of Independence"
+  )
+```
+
+
+```{r}
 # Calculate means and sds for all groups
 means_w <- get_means(ajr_data, all_vars)
 sds_w <- get_sds(ajr_data, all_vars)
@@ -132,7 +177,10 @@ final_table <- tibble(
             means_q$cons00a[4], sds_q$cons00a[4], means_q$cons1[4], sds_q$cons1[4], means_q$democ00a[4], sds_q$democ00a[4],
             means_q$euro1900[4], sds_q$euro1900[4], means_q$logem4[4], sds_q$logem4[4], obs_q$n[4], NA)
 )
+```
 
+
+```{r}
 # ---  Generate and Style the HTML Table ---
 final_table %>%
   # Use a single, robust mutate with case_when to format all numbers
@@ -163,6 +211,8 @@ final_table %>%
 
 The descriptive statistics in Table 1 reveal a strong, negative raw correlation between the instrument (settler mortality) and both the outcome (log GDP per capita) and the endogenous regressor (institutional quality). As we move from the lowest mortality quartile to the highest, average income and the average quality of institutions systematically decline. This provides initial, non-causal support for the relationships underlying the IV strategy.
 
+NEW: To complement the descriptive patterns in Table 1, the scatterplots provide a direct visual assessment of the instrument's relevance (institutional quality). This directly addresses the first requirement for a valid IV strategy. Relevance requires that the instrument be sufficiently correlated with the endogenous regressor-—that is, Cov(Z,X) cannot be 0,where Z is settler mortality and X is institutional quality. Table 1 shows a strong, negative correlation between settler mortality and both institutional quality and income. The scatterplots demonstrate this relationship as well--as log settler mortality increases, the institutional quality measures decline along clear downward sloping patterns. This reinforces the idea that the historical disease environment is strongly correlated with modern institutions, making the IV relevant. Although the scatterplots do not establish causality, they provide a first-stage picture showing that the instrument contains meaningful variation for explaining institutional outcomes, supporting the case for an IV strategy.
+
 # 4 OLS Regressions
 
 The following code establishes a baseline correlation using OLS, regressing log GDP per capita on a measure of institutional quality (average protection against expropriation risk). These results serve as a benchmark against which the 2SLS estimates can be compared.
@@ -175,7 +225,10 @@ ajr_dta <- read_dta("https://raw.githubusercontent.com/greenemilya98/Econometric
 
 # ---  Create Data Subsets ---
 base_sample <- ajr_dta %>% filter(baseco == 1)
+```
 
+
+```{r}
 # ---  Run All Regressions ---
 # Note on results: The public data has minor differences from the paper's,
 # so coefficients may not match perfectly.
@@ -263,7 +316,10 @@ panel_A_models <- list(
   "(9)" = feols(avexpr ~ logem4, data = lpgp_sample), # Uses smaller sample
   "(10)" = feols(avexpr ~ logem4 + lat_abst, data = lpgp_sample) # Uses smaller sample
 )
+```
 
+
+```{r}
 # --- Generate Table for Panel A ---
 modelsummary(
   panel_A_models,
@@ -278,7 +334,10 @@ modelsummary(
   stars = TRUE,
   notes = "Notes: Dependent Variable is Average Expropriation Risk, 1985-95. Standard errors in parentheses."
 )
+```
 
+
+```{r}
 # --- Run Regressions for Panel B ---
 panel_B_models <- list(
   # Dep Var: Constraint on Executive in 1900
@@ -295,7 +354,10 @@ panel_B_models <- list(
   "(9)" = feols(euro1900 ~ logem4, data = lpgp_sample),
   "(10)" = feols(euro1900 ~ logem4 + lat_abst, data = lpgp_sample)
 )
+```
 
+
+```{r}
 # --- Generate Table for Panel B ---
 modelsummary(
   panel_B_models,
@@ -351,8 +413,11 @@ iv_models <- list(
   "(7)" = feols(logpgp95 ~ africa + asia + other_cont | avexpr ~ logem4, data = base_sample),
   "(8)" = feols(logpgp95 ~ lat_abst + africa + asia + other_cont | avexpr ~ logem4, data = base_sample),
   "(9)" = feols(loghjypl ~ 1 | avexpr ~ logem4, data = base_sample))
+```
 
-  # --- Generate Table for Panel A (2SLS Results) ---
+
+```{r}
+# --- Generate Table for Panel A (2SLS Results) ---
 modelsummary(
   iv_models,
   output = "gt",
@@ -366,7 +431,10 @@ modelsummary(
   stars = TRUE,
   notes = "Notes: 2SLS estimates with standard errors in parentheses."
 )
+```
 
+
+```{r}
 # ---  Generate Table for Panel B (First Stage Results) ---
 
 
@@ -389,7 +457,10 @@ modelsummary(
   stars = TRUE,
   notes = "Notes: First-stage OLS regressions. Dependent variable is Expropriation Risk. Standard errors in parentheses."
 )
+```
 
+
+```{r}
 # --- Run Regressions for Panel C ---
 panel_C_models <- list(
   "(1)" = feols(logpgp95 ~ avexpr, data = base_sample),
@@ -402,7 +473,10 @@ panel_C_models <- list(
   "(8)" = feols(logpgp95 ~ avexpr + lat_abst + africa + asia + other_cont, data = base_sample),
   "(9)" = feols(loghjypl ~ avexpr, data = base_sample)
 )
+```
 
+
+```{r}
 # --- Generate Table for Panel C ---
 modelsummary(
   panel_C_models,
@@ -418,4 +492,515 @@ modelsummary(
 ```
 
 Panel A shows a large, positive, and statistically significant causal effect of institutional quality on log GDP per capita. Notably, the 2SLS coefficient on institutions is substantially larger than the OLS coefficient from Table 2. This suggests that the OLS estimates were biased downwards, potentially due to measurement error in the institutions variable, which can cause attenuation bias. The results are robust across various subsamples. Panel B confirms the first-stage relationship is strong and significant in all specifications.
+
+# 7 IV Regressions with Additional Controls
+The following code begins to test the exclusion restriction by subjecting the baseline IV estimate to the inclusion of controls for other historical factors that could be correlated with colonial experience, such as colonial origin, legal origin, and religion.
+
+log(GDPi)=β0+β1Riskiˆ+γ1Latitudei+γ2Colony Dummiesi+γ3Religioni+...
+
+```{r}
+# ---  Load and Prepare Data ---
+ajr_dta <- read_dta("https://raw.githubusercontent.com/greenemilya98/EconometricsFinalProject/451b46ec18a469bb9c064d5c2e6f7ea9e302ae66/maketable5.dta")
+
+# Create the base sample
+base_sample <- ajr_dta %>% filter(baseco == 1)
+
+# Create the British colonies subsample
+brit_colonies_sample <- base_sample %>% filter(f_brit == 1)
+
+# ---  Run IV and OLS Regressions ---
+# Run IV Models (for Panels A and B)
+iv_models <- list(
+  "(1)" = feols(logpgp95 ~ f_brit + f_french | avexpr ~ logem4, data = base_sample),
+  "(2)" = feols(logpgp95 ~ lat_abst + f_brit + f_french | avexpr ~ logem4, data = base_sample),
+  "(3)" = feols(logpgp95 ~ 1 | avexpr ~ logem4, data = brit_colonies_sample),
+  "(4)" = feols(logpgp95 ~ lat_abst | avexpr ~ logem4, data = brit_colonies_sample),
+  "(5)" = feols(logpgp95 ~ sjlofr | avexpr ~ logem4, data = base_sample),
+  "(6)" = feols(logpgp95 ~ lat_abst + sjlofr | avexpr ~ logem4, data = base_sample),
+  "(7)" = feols(logpgp95 ~ catho80 + muslim80 + no_cpm80 | avexpr ~ logem4, data = base_sample),
+  "(8)" = feols(logpgp95 ~ lat_abst + catho80 + muslim80 + no_cpm80 | avexpr ~ logem4, data = base_sample),
+  "(9)" = feols(logpgp95 ~ f_french + sjlofr + catho80 + muslim80 + no_cpm80 | avexpr ~ logem4, data = base_sample),
+  "(10)" = feols(logpgp95 ~ lat_abst + f_french + sjlofr + catho80 + muslim80 + no_cpm80 | avexpr ~ logem4, data = base_sample)
+)
+
+# Run OLS Models (for Panel C)
+ols_models <- list(
+  "(1)" = feols(logpgp95 ~ avexpr + f_brit + f_french, data = base_sample),
+  "(2)" = feols(logpgp95 ~ avexpr + lat_abst + f_brit + f_french, data = base_sample),
+  "(3)" = feols(logpgp95 ~ avexpr, data = brit_colonies_sample),
+  "(4)" = feols(logpgp95 ~ avexpr + lat_abst, data = brit_colonies_sample),
+  "(5)" = feols(logpgp95 ~ avexpr + sjlofr, data = base_sample),
+  "(6)" = feols(logpgp95 ~ avexpr + lat_abst + sjlofr, data = base_sample),
+  "(7)" = feols(logpgp95 ~ avexpr + catho80 + muslim80 + no_cpm80, data = base_sample),
+  "(8)" = feols(logpgp95 ~ avexpr + lat_abst + catho80 + muslim80 + no_cpm80, data = base_sample),
+  "(9)" = feols(logpgp95 ~ avexpr + lat_abst + f_french + sjlofr + catho80 + muslim80 + no_cpm80, data = base_sample)
+)
+```
+
+
+```{r}
+# ---  Generate Tables for Each Panel ---
+
+# Panel A: 2SLS with Additional Controls
+modelsummary(
+  iv_models,
+  output = "gt",
+  title = "Table 5, Panel A: IV Regressions of Log GDP Per Capita with Additional Controls",
+  coef_map = c("fit_avexpr" = "Average Expropriation Risk", "lat_abst" = "Latitude",
+               "f_brit" = "British Colony Dummy", "f_french" = "French Colony Dummy",
+               "sjlofr" = "French Legal Origin", "catho80" = "Catholic Religion Dummy",
+               "muslim80" = "Muslim Religion Dummy", "no_cpm80" = "Other Religion Dummy"),
+  gof_map = "nobs",
+  stars = TRUE
+)
+```
+
+
+```{r}
+# Panel B: First Stage
+
+first_stage_models <- purrr::map(iv_models, ~.$iv_first_stage$avexpr)
+# ---------------------------------
+
+modelsummary(
+  first_stage_models,
+  output = "gt",
+  title = "Table 5, Panel B: First-Stage Regressions",
+  coef_map = c("logem4" = "Log Settler Mortality", "lat_abst" = "Latitude",
+               "f_brit" = "British Colony Dummy", "f_french" = "French Colony Dummy",
+               "sjlofr" = "French Legal Origin", "catho80" = "Catholic Religion Dummy",
+               "muslim80" = "Muslim Religion Dummy", "no_cpm80" = "Other Religion Dummy",
+               "(Intercept)" = "Constant"),
+  gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                 list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+  stars = TRUE
+)
+```
+
+
+```{r}
+# Panel C: OLS Regressions
+modelsummary(
+  ols_models,
+  output = "gt",
+  title = "Table 5, Panel C: OLS Regressions with Additional Controls",
+  coef_map = c("avexpr" = "Average Expropriation Risk", "lat_abst" = "Latitude",
+               "f_brit" = "British Colony Dummy", "f_french" = "French Colony Dummy",
+               "sjlofr" = "French Legal Origin", "catho80" = "Catholic Religion Dummy",
+               "muslim80" = "Muslim Religion Dummy", "no_cpm80" = "Other Religion Dummy"),
+  gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                 list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+  stars = TRUE
+)
+```
+
+The estimated causal effect of institutions on income remains large, significant, and remarkably stable after including these additional controls. This provides evidence against the hypothesis that the instrument is working through these alternative channels. The stability of the coefficient strengthens the argument that institutions are the primary causal mechanism.
+
+# 8 Robustness Checks for IV Regressions
+The following code further scrutinizes the exclusion restriction by testing the baseline result against a battery of geographic and resource-based variables. This directly confronts the competing “geography hypothesis” which posits that climate, disease, and resource endowments are the fundamental causes of prosperity.
+
+log(GDPi)=β0+β1Riskiˆ+γ1Latitudei+γ2Temperaturei+γ3Soil Qualityi+...
+
+```{r}
+# ---  Load and Prepare Data ---
+ajr_dta <- read_dta("https://raw.githubusercontent.com/greenemilya98/EconometricsFinalProject/451b46ec18a469bb9c064d5c2e6f7ea9e302ae66/maketable6.dta")
+base_sample <- ajr_dta %>% filter(baseco == 1)
+
+# ---  Define Control Variable Sets ---
+temp_humid_controls <- "temp1 + temp2 + humid1 + humid2"
+resource_controls <- "steplow + deslow + stepmid + desmid + drystep + drywint + goldm + iron + silv + zinc + oilres + landlock"
+all_controls <- paste("lat_abst", temp_humid_controls, "edes1975", "avelf", resource_controls, sep = " + ")
+```
+
+
+```{r}
+# ---  Run All Regression Models ---
+
+# Run IV Models (for Panels A and B)
+iv_models <- list(
+  "(1)" = feols(logpgp95 ~ 1 | avexpr ~ logem4, data = base_sample),
+  "(2)" = feols(as.formula(paste("logpgp95 ~ lat_abst +", temp_humid_controls, "| avexpr ~ logem4")), data = base_sample),
+  "(3)" = feols(logpgp95 ~ edes1975 | avexpr ~ logem4, data = base_sample),
+  "(4)" = feols(logpgp95 ~ lat_abst + edes1975 | avexpr ~ logem4, data = base_sample),
+  "(5)" = feols(as.formula(paste("logpgp95 ~", resource_controls, "| avexpr ~ logem4")), data = base_sample),
+  "(6)" = feols(as.formula(paste("logpgp95 ~ lat_abst +", resource_controls, "| avexpr ~ logem4")), data = base_sample),
+  "(7)" = feols(logpgp95 ~ avelf | avexpr ~ logem4, data = base_sample),
+  "(8)" = feols(logpgp95 ~ lat_abst + avelf | avexpr ~ logem4, data = base_sample),
+  "(9)" = feols(as.formula(paste("logpgp95 ~", all_controls, "| avexpr ~ logem4")), data = base_sample)
+)
+
+# Run OLS Models (for Panel C)
+ols_models <- list(
+  "(1)" = feols(as.formula(paste("logpgp95 ~ avexpr +", temp_humid_controls)), data = base_sample),
+  "(2)" = feols(as.formula(paste("logpgp95 ~ avexpr + lat_abst +", temp_humid_controls)), data = base_sample),
+  "(3)" = feols(logpgp95 ~ avexpr + edes1975, data = base_sample),
+  "(4)" = feols(logpgp95 ~ avexpr + lat_abst + edes1975, data = base_sample),
+  "(5)" = feols(as.formula(paste("logpgp95 ~ avexpr +", resource_controls)), data = base_sample),
+  "(6)" = feols(as.formula(paste("logpgp95 ~ avexpr + lat_abst +", resource_controls)), data = base_sample),
+  "(7)" = feols(logpgp95 ~ avexpr + avelf, data = base_sample),
+  "(8)" = feols(logpgp95 ~ avexpr + lat_abst + avelf, data = base_sample),
+  "(9)" = feols(as.formula(paste("logpgp95 ~ avexpr +", all_controls)), data = base_sample)
+)
+```
+
+
+```{r}
+# ---  Generate Table for Panel A ---
+# This section manually builds the complex layout for Panel A
+
+# Extract coefficients and p-values
+tidy_results <- map_dfr(iv_models, tidy, .id = "model") %>%
+  mutate(estimate_str = sprintf("%.2f", estimate), se_str = sprintf("(%.2f)", std.error))
+
+get_p_value <- function(model, vars) { sprintf("[%.2f]", wald(model, vars)[[4]]) }
+temp_vars <- c("temp1", "temp2"); humid_vars <- c("humid1", "humid2")
+soil_vars <- c("steplow", "deslow", "stepmid", "desmid", "drystep", "drywint")
+resource_vars <- c("goldm", "iron", "silv", "zinc", "oilres")
+
+p_values <- list(
+  temp2 = get_p_value(iv_models[['(2)']], temp_vars), humid2 = get_p_value(iv_models[['(2)']], humid_vars),
+  soil5 = get_p_value(iv_models[['(5)']], soil_vars), resource5 = get_p_value(iv_models[['(5)']], resource_vars),
+  soil6 = get_p_value(iv_models[['(6)']], soil_vars), resource6 = get_p_value(iv_models[['(6)']], resource_vars),
+  temp9 = get_p_value(iv_models[['(9)']], temp_vars), humid9 = get_p_value(iv_models[['(9)']], humid_vars),
+  soil9 = get_p_value(iv_models[['(9)']], soil_vars), resource9 = get_p_value(iv_models[['(9)']], resource_vars)
+)
+
+nobs <- map_chr(iv_models, ~as.character(nobs(.)))
+find_val <- function(m, t, type) { tidy_results %>% filter(model == m, term == t) %>% pull({{type}}) %>% first() }
+
+# Manually construct the table data frame
+final_table_A <- tribble(
+  ~term, ~`(1)`, ~`(2)`, ~`(3)`, ~`(4)`, ~`(5)`, ~`(6)`, ~`(7)`, ~`(8)`, ~`(9)`,
+  "Average protection against expropriation risk, 1985-1995", find_val("(1)", "fit_avexpr", "estimate_str"), find_val("(2)", "fit_avexpr", "estimate_str"), find_val("(3)", "fit_avexpr", "estimate_str"), find_val("(4)", "fit_avexpr", "estimate_str"), find_val("(5)", "fit_avexpr", "estimate_str"), find_val("(6)", "fit_avexpr", "estimate_str"), find_val("(7)", "fit_avexpr", "estimate_str"), find_val("(8)", "fit_avexpr", "estimate_str"), find_val("(9)", "fit_avexpr", "estimate_str"),
+  "", find_val("(1)", "fit_avexpr", "se_str"), find_val("(2)", "fit_avexpr", "se_str"), find_val("(3)", "fit_avexpr", "se_str"), find_val("(4)", "fit_avexpr", "se_str"), find_val("(5)", "fit_avexpr", "se_str"), find_val("(6)", "fit_avexpr", "se_str"), find_val("(7)", "fit_avexpr", "se_str"), find_val("(8)", "fit_avexpr", "se_str"), find_val("(9)", "fit_avexpr", "se_str"),
+  "Latitude", NA, find_val("(2)", "lat_abst", "estimate_str"), NA, find_val("(4)", "lat_abst", "estimate_str"), NA, find_val("(6)", "lat_abst", "estimate_str"), NA, find_val("(8)", "lat_abst", "estimate_str"), find_val("(9)", "lat_abst", "estimate_str"),
+  "", NA, find_val("(2)", "lat_abst", "se_str"), NA, find_val("(4)", "lat_abst", "se_str"), NA, find_val("(6)", "lat_abst", "se_str"), NA, find_val("(8)", "lat_abst", "se_str"), find_val("(9)", "lat_abst", "se_str"),
+  "p-value for temperature variables", NA, p_values$temp2, NA, NA, NA, NA, NA, NA, p_values$temp9,
+  "p-value for humidity variables", NA, p_values$humid2, NA, NA, NA, NA, NA, NA, p_values$humid9,
+  "Percent of European descent in 1975", NA, NA, find_val("(3)", "edes1975", "estimate_str"), find_val("(4)", "edes1975", "estimate_str"), NA, NA, NA, NA, find_val("(9)", "edes1975", "estimate_str"),
+  "", NA, NA, find_val("(3)", "edes1975", "se_str"), find_val("(4)", "edes1975", "se_str"), NA, NA, NA, NA, find_val("(9)", "edes1975", "se_str"),
+  "p-value for soil quality", NA, NA, NA, NA, p_values$soil5, p_values$soil6, NA, NA, p_values$soil9,
+  "p-value for natural resources", NA, NA, NA, NA, p_values$resource5, p_values$resource6, NA, NA, p_values$resource9,
+  "Dummy for being landlocked", NA, NA, NA, NA, find_val("(5)", "landlock", "estimate_str"), find_val("(6)", "landlock", "estimate_str"), NA, NA, find_val("(9)", "landlock", "estimate_str"),
+  "", NA, NA, NA, NA, find_val("(5)", "landlock", "se_str"), find_val("(6)", "landlock", "se_str"), NA, NA, find_val("(9)", "landlock", "se_str"),
+  "Ethnolinguistic fragmentation", NA, NA, NA, NA, NA, NA, find_val("(7)", "avelf", "estimate_str"), find_val("(8)", "avelf", "estimate_str"), find_val("(9)", "avelf", "estimate_str"),
+  "", NA, NA, NA, NA, NA, NA, find_val("(7)", "avelf", "se_str"), find_val("(8)", "avelf", "se_str"), find_val("(9)", "avelf", "se_str"),
+  "Number of observations", nobs[1], nobs[2], nobs[3], nobs[4], nobs[5], nobs[6], nobs[7], nobs[8], nobs[9]
+)
+
+# Render Panel A with gt
+
+  gt(final_table_A, rowname_col = "term") %>%
+    tab_header(title = "Table 6, Panel A: Two-Stage Least Squares") %>%
+    sub_missing(missing_text = "") %>%
+    cols_align(align = "center", columns = -term) %>%
+    tab_options(table.border.top.style = "none",
+                column_labels.border.bottom.style = "solid",
+                column_labels.border.bottom.width = px(2),
+                table_body.border.bottom.style = "none")
+```
+
+
+```{r}
+# ---  Generate Table for Panel B ---
+first_stage_models <- purrr::map(iv_models, ~.$iv_first_stage$avexpr)
+
+
+  modelsummary(
+    first_stage_models,
+    output = "gt",
+    title = "Table 6, Panel B: First-Stage Regressions",
+    coef_map = c("logem4" = "Log Settler Mortality"),
+    gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                   list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+    stars = TRUE,
+    notes = "Notes: Only the coefficient on Log Settler Mortality is shown. All models include the full set of controls."
+  )
+```
+
+
+```{r}
+# ---  Generate Table for Panel C ---
+  modelsummary(
+    ols_models,
+    output = "gt",
+    title = "Table 6, Panel C: OLS Robustness Checks",
+    coef_map = c("avexpr" = "Average Expropriation Risk"),
+    gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                   list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+    stars = TRUE,
+    notes = "Notes: Only the coefficient on Average Expropriation Risk is shown. All models include the full set of controls."
+  )
+```
+
+The coefficient on institutions remains robust and significant even after controlling for temperature, humidity, soil quality, natural resources, and ethnolinguistic fragmentation. The table reports p-values for the joint significance of these groups of controls, which are generally insignificant. This result is a powerful rebuttal to the simple geography hypothesis, suggesting that geography’s primary influence on modern income was through its effect on historical institutional development.
+
+## Geography and Health
+
+The following code takes a look at the most plausible threat to the exclusion restriction: that settler mortality is not just a historical instrument but a proxy for a persistent disease environment that directly impacts health and productivity today. The analysis controls for modern health indicators like malaria prevalence and life expectancy.
+
+Second Stage:
+
+log(GDPi)=β0+β1Riskiˆ+β1Healthiˆ+ϵi
+
+First Stage:
+
+Riski=π0+π1Z1i+π2Z2i+νi
+
+Healthi=δ0+δ1Z1i+δ2Z2i+ηi
+
+where Healthi is a modern health outcome (e.g., malaria) and Z1 and Z2 are the instruments.
+
+```{r}
+# ---  Load and Prepare Data ---
+ajr_dta <- read_dta("https://raw.githubusercontent.com/greenemilya98/EconometricsFinalProject/451b46ec18a469bb9c064d5c2e6f7ea9e302ae66/maketable7.dta")
+
+# Create the base sample and the `other_cont` dummy variable
+base_sample <- ajr_dta %>%
+  filter(baseco == 1) %>%
+  mutate(other_cont = if_else(shortnam %in% c("AUS", "MLT", "NZL"), 1, 0))
+
+# Create subsamples for specific regressions
+ols_sample_789 <- base_sample %>%
+  filter(!is.na(logem4), !is.na(latabs), !is.na(lt100km), !is.na(meantemp))
+
+ols_sample_1011 <- base_sample %>%
+  filter(!is.na(yellow))
+```
+
+
+```{r}
+# ---  Run All Regression Models ---
+
+# Run IV Models (for Panels A and B)
+iv_models <- list(
+  "(1)" = feols(logpgp95 ~ malfal94 | avexpr ~ logem4, data = base_sample),
+  "(2)" = feols(logpgp95 ~ lat_abst + malfal94 | avexpr ~ logem4, data = base_sample),
+  "(3)" = feols(logpgp95 ~ leb95 | avexpr ~ logem4, data = base_sample),
+  "(4)" = feols(logpgp95 ~ lat_abst + leb95 | avexpr ~ logem4, data = base_sample),
+  "(5)" = feols(logpgp95 ~ imr95 | avexpr ~ logem4, data = base_sample),
+  "(6)" = feols(logpgp95 ~ lat_abst + imr95 | avexpr ~ logem4, data = base_sample),
+  "(7)" = feols(logpgp95 ~ 1 | avexpr + malfal94 ~ logem4 + latabs + lt100km + meantemp, data = base_sample),
+  "(8)" = feols(logpgp95 ~ 1 | avexpr + leb95 ~ logem4 + latabs + lt100km + meantemp, data = base_sample),
+  "(9)" = feols(logpgp95 ~ 1 | avexpr + imr95 ~ logem4 + latabs + lt100km + meantemp, data = base_sample),
+  "(10)" = feols(logpgp95 ~ 1 | avexpr ~ yellow, data = base_sample),
+  "(11)" = feols(logpgp95 ~ africa + asia + other_cont | avexpr ~ yellow, data = base_sample)
+)
+```
+
+
+```{r}
+# Run OLS Models (for Panel C)
+ols_models <- list(
+  "(1)" = feols(logpgp95 ~ avexpr + malfal94, data = base_sample),
+  "(2)" = feols(logpgp95 ~ avexpr + lat_abst + malfal94, data = base_sample),
+  "(3)" = feols(logpgp95 ~ avexpr + leb95, data = base_sample),
+  "(4)" = feols(logpgp95 ~ avexpr + lat_abst + leb95, data = base_sample),
+  "(5)" = feols(logpgp95 ~ avexpr + imr95, data = base_sample),
+  "(6)" = feols(logpgp95 ~ avexpr + lat_abst + imr95, data = base_sample),
+  "(7)" = feols(logpgp95 ~ avexpr + malfal94, data = ols_sample_789),
+  "(8)" = feols(logpgp95 ~ avexpr + leb95, data = ols_sample_789),
+  "(9)" = feols(logpgp95 ~ avexpr + imr95, data = ols_sample_789),
+  "(10)" = feols(logpgp95 ~ avexpr, data = ols_sample_1011),
+  "(11)" = feols(logpgp95 ~ avexpr + africa + asia + other_cont, data = ols_sample_1011)
+)
+```
+
+
+```{r}
+# ---  Generate Tables for Each Panel ---
+
+# Panel A: 2SLS with Health Variables
+modelsummary(
+  iv_models,
+  output = "gt",
+  title = "Table 7, Panel A: 2SLS Regressions with Geography and Health Variables",
+  coef_map = c("fit_avexpr" = "Average Expropriation Risk", "fit_malfal94" = "Malaria Index",
+               "fit_leb95" = "Life Expectancy", "fit_imr95" = "Infant Mortality",
+               "lat_abst" = "Latitude", "malfal94" = "Malaria Index",
+               "leb95" = "Life Expectancy", "imr95" = "Infant Mortality",
+               "africa" = "Africa Dummy", "asia" = "Asia Dummy", "other_cont" = "Other Continent Dummy"),
+  gof_map = "nobs",
+  stars = TRUE
+)
+```
+
+
+```{r}
+# Panel B: First Stage
+first_stage_models_avexpr <- purrr::map(iv_models, ~.$iv_first_stage$avexpr)
+# ---------------------------------
+
+modelsummary(
+  first_stage_models_avexpr,
+  output = "gt",
+  title = "Table 7, Panel B: First-Stage Regressions for Expropriation Risk",
+  coef_map = c("logem4" = "Log Settler Mortality", "yellow" = "Yellow Fever Dummy",
+               "latabs" = "Latitude (abs)", "lt100km" = "Coastal Dummy",
+               "meantemp" = "Mean Temperature", "lat_abst" = "Latitude",
+               "malfal94" = "Malaria Index", "leb95" = "Life Expectancy", "imr95" = "Infant Mortality",
+               "africa" = "Africa Dummy", "asia" = "Asia Dummy", "other_cont" = "Other Continent Dummy",
+               "(Intercept)" = "Constant"),
+  gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                 list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+  stars = TRUE
+)
+```
+
+
+```{r}
+# Panel C: OLS Regressions
+modelsummary(
+  ols_models,
+  output = "gt",
+  title = "Table 7, Panel C: OLS Regressions with Geography and Health Variables",
+  coef_map = c("avexpr" = "Average Expropriation Risk", "lat_abst" = "Latitude",
+               "malfal94" = "Malaria Index", "leb95" = "Life Expectancy",
+               "imr95" = "Infant Mortality", "africa" = "Africa Dummy",
+               "asia" = "Asia Dummy", "other_cont" = "Other Continent Dummy"),
+  gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                 list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+  stars = TRUE
+)
+
+
+```
+
+The causal effect of institutions remains large and significant when controlling for modern health variables. Furthermore, when health variables themselves are instrumented for (columns 7-9), they are not significant, while institutions remain so. This suggests that the historical disease environment’s effect on income is not primarily through a persistent local disease environment, but rather through its impact on the development of institutions.
+
+# 9 Overidentification Tests
+The final code block provides further tests of the IV strategy’s validity. It employs alternative historical variables as potential instruments and, by using multiple instruments simultaneously, performs tests of overidentifying restrictions (Sargan tests).
+
+First Stage:
+Riski=π0+π1Z1i+π2Z2i+π′3Xi+νi
+log(GDPi)=β0+β1Riskˆi+β′2Xi+ϵi
+Here, Z1i is the main instrument (settler mortality) and Z2 is an additional instrument (e.g., early institutions). The Sargan test is then used to assess whether both instruments are uncorrelated with the error term, ϵi.
+
+```{r}
+# ---  Load and Prepare Data ---
+ajr_dta <- read_dta("https://raw.githubusercontent.com/greenemilya98/EconometricsFinalProject/451b46ec18a469bb9c064d5c2e6f7ea9e302ae66/maketable8.dta")
+
+# Create the base sample for the analysis
+base_sample <- ajr_dta %>% filter(baseco == 1)
+
+```
+
+
+```{r}
+# ---  Run All Regression Models ---
+
+# Panel A & B Models: IV with alternative instruments
+panel_AB_models <- list(
+  "(1)" = feols(logpgp95 ~ 1 | avexpr ~ euro1900, data = base_sample),
+  "(2)" = feols(logpgp95 ~ lat_abst | avexpr ~ euro1900, data = base_sample),
+  "(3)" = feols(logpgp95 ~ 1 | avexpr ~ cons00a, data = base_sample),
+  "(4)" = feols(logpgp95 ~ lat_abst | avexpr ~ cons00a, data = base_sample),
+  "(5)" = feols(logpgp95 ~ 1 | avexpr ~ democ00a, data = base_sample),
+  "(6)" = feols(logpgp95 ~ lat_abst | avexpr ~ democ00a, data = base_sample),
+  "(7)" = feols(logpgp95 ~ indtime | avexpr ~ cons1, data = base_sample),
+  "(8)" = feols(logpgp95 ~ lat_abst + indtime | avexpr ~ cons1, data = base_sample),
+  "(9)" = feols(logpgp95 ~ indtime | avexpr ~ democ1, data = base_sample),
+  "(10)" = feols(logpgp95 ~ lat_abst + indtime | avexpr ~ democ1, data = base_sample)
+)
+```
+
+
+```{r}
+# Panel C Models: Overidentification tests (multiple instruments)
+panel_C_models <- list(
+  "(1)" = feols(logpgp95 ~ 1 | avexpr ~ euro1900 + logem4, data = base_sample),
+  "(2)" = feols(logpgp95 ~ lat_abst | avexpr ~ euro1900 + logem4, data = base_sample),
+  "(3)" = feols(logpgp95 ~ 1 | avexpr ~ cons00a + logem4, data = base_sample),
+  "(4)" = feols(logpgp95 ~ lat_abst | avexpr ~ cons00a + logem4, data = base_sample),
+  "(5)" = feols(logpgp95 ~ 1 | avexpr ~ democ00a + logem4, data = base_sample),
+  "(6)" = feols(logpgp95 ~ lat_abst | avexpr ~ democ00a + logem4, data = base_sample),
+  "(7)" = feols(logpgp95 ~ indtime | avexpr ~ cons1 + logem4, data = base_sample),
+  "(8)" = feols(logpgp95 ~ lat_abst + indtime | avexpr ~ cons1 + logem4, data = base_sample),
+  "(9)" = feols(logpgp95 ~ indtime | avexpr ~ democ1 + logem4, data = base_sample),
+  "(10)" = feols(logpgp95 ~ lat_abst + indtime | avexpr ~ democ1 + logem4, data = base_sample)
+)
+```
+
+
+```{r}
+# Panel D Models: IV with mortality as an exogenous control
+panel_D_models <- list(
+  "(1)" = feols(logpgp95 ~ logem4 | avexpr ~ euro1900, data = base_sample),
+  "(2)" = feols(logpgp95 ~ logem4 + lat_abst | avexpr ~ euro1900, data = base_sample),
+  "(3)" = feols(logpgp95 ~ logem4 | avexpr ~ cons00a, data = base_sample),
+  "(4)" = feols(logpgp95 ~ logem4 + lat_abst | avexpr ~ cons00a, data = base_sample),
+  "(5)" = feols(logpgp95 ~ logem4 | avexpr ~ democ00a, data = base_sample),
+  "(6)" = feols(logpgp95 ~ logem4 + lat_abst | avexpr ~ democ00a, data = base_sample),
+  "(7)" = feols(logpgp95 ~ logem4 + indtime | avexpr ~ cons1, data = base_sample),
+  "(8)" = feols(logpgp95 ~ logem4 + lat_abst + indtime | avexpr ~ cons1, data = base_sample),
+  "(9)" = feols(logpgp95 ~ logem4 + indtime | avexpr ~ democ1, data = base_sample),
+  "(10)" = feols(logpgp95 ~ logem4 + lat_abst + indtime | avexpr ~ democ1, data = base_sample)
+)
+```
+
+
+```{r}
+# ---  Generate Tables for Each Panel ---
+
+# Panel A: 2SLS with Alternative Instruments
+modelsummary(
+  panel_AB_models, output = "gt", title = "Table 8, Panel A: 2SLS with Alternative Instruments",
+  coef_map = c("fit_avexpr" = "Average Expropriation Risk", "lat_abst" = "Latitude", "indtime" = "Date of Independence"),
+  gof_map = "nobs", stars = TRUE
+)
+```
+
+
+```{r}
+# Panel B: First Stage for Alternative Instruments
+
+first_stage_AB <- purrr::map(panel_AB_models, ~.$iv_first_stage$avexpr)
+# ---------------------------------
+modelsummary(
+  first_stage_AB, output = "gt", title = "Table 8, Panel B: First Stage for Alternative Instruments",
+  coef_map = c("euro1900" = "European Settlements in 1900", "cons00a" = "Constraint on Executive in 1900",
+               "democ00a" = "Democracy in 1900", "cons1" = "Constraint on Executive at Independence",
+               "democ1" = "Democracy at Independence", "lat_abst" = "Latitude", "indtime" = "Date of Independence",
+               "(Intercept)" = "Constant"),
+  gof_map = list(list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+                 list("raw" = "r.squared", "clean" = "R-squared", "fmt" = 3)),
+  stars = TRUE
+)
+```
+
+
+```{r}
+# Panel C: Overidentification Tests
+gof_map_sargan <- list(
+  list("raw" = "nobs", "clean" = "Num. Obs.", "fmt" = 0),
+  list("raw" = "iv_sargan_p", "clean" = "Sargan Test p-value", "fmt" = 3)
+)
+modelsummary(
+  panel_C_models, output = "gt", title = "Table 8, Panel C: Overidentification Tests",
+  coef_map = c("fit_avexpr" = "Average Expropriation Risk", "lat_abst" = "Latitude", "indtime" = "Date of Independence"),
+  gof_map = gof_map_sargan, stars = TRUE
+)
+```
+
+
+```{r}
+# Panel D: 2SLS with Mortality as Exogenous Control
+modelsummary(
+  panel_D_models, output = "gt", title = "Table 8, Panel D: 2SLS with Log Mortality as Exogenous Variable",
+  coef_map = c("fit_avexpr" = "Average Expropriation Risk", "logem4" = "Log Settler Mortality",
+               "lat_abst" = "Latitude", "indtime" = "Date of Independence"),
+  gof_map = "nobs", stars = TRUE
+)
+```
+
+
+Panel C is the most critical. When settler mortality is used as an instrument alongside other plausible instruments (like early political institutions), the Sargan test fails to reject the null hypothesis that the instruments are valid (i.e., uncorrelated with the error term). This provides statistical evidence supporting the exclusion restriction. Panel D further shows that the main result is not driven by an outlier effect of settler mortality itself.
+
+# 10 Conclusion
+Through a robust and comprehensively tested instrumental variable strategy, this replication confirms the central finding of Acemoglu, Johnson, and Robinson (2001). The evidence strongly supports the hypothesis that institutions that protect property rights and constrain elite power have a large, positive, and causal effect on long-run economic development. The paper effectively refutes purely geographic or cultural explanations, demonstrating instead that these factors likely had their greatest impact through their influence on the historical development of institutions. This work has fundamentally reshaped the field of development economics, placing institutional quality at the forefront of the discipline.
+
+# 11 References
+Acemoglu, Daron, Simon Johnson, and James A. Robinson. “The Colonial Origins of Comparative Development: An Empirical Investigation: Reply.” The American Economic Review 102, no. 6 (2012): 3077–3110. http://www.jstor.org/stable/41724682.
+
+Ghosh, Agniva. “Replication of Econometrics in R.” 2024; updated August 15, 2025. RPubs. https://www.rpubs.com/AgnivaG26/1336430.
 
