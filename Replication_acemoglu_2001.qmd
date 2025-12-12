@@ -1,7 +1,7 @@
 ---
 title: "Econometrics Final"
 author: "Emily Green, Christian Amelia, and Dylan Landon"
-format: pdf
+format: html
 editor: visual
 ---
 
