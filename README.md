@@ -61,7 +61,9 @@ This replication reproduces the main OLS and 2SLS estimates of the impact of ins
 
 ## 3. Software and Packages
 
-This project uses **R** and **Quarto**. Required packages:
+This project uses **R** and **Quarto**. 
+
+Required packages are:
 
 - `tidyverse`
 - `janitor`
